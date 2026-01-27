@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,14 +111,53 @@ func ResolveDeckPath(deckDir, deckName string) (string, error) {
 		return "", errors.New("invalid deck name")
 	}
 
+	if filepath.IsAbs(tDeckName) {
+		return "", errors.New("deck path must be relative to DeckDir")
+	}
+
 	if filepath.Ext(tDeckName) != ".cod" {
 		tDeckName += ".cod"
 	}
 
-	deckFilePath := filepath.Join(tDeckDir, tDeckName)
-	_, err := os.Stat(deckFilePath)
+	deckFilePath, err := filepath.Abs(filepath.Join(tDeckDir, tDeckName))
 	if err != nil {
 		return "", err
+	}
+
+	rel, err := filepath.Rel(tDeckDir, deckFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", errors.New("deck path must be relative to DeckDir")
+	}
+
+	foundFiles := make([]string, 0)
+	walk := func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && info.Name() == tDeckName {
+			foundFiles = append(foundFiles, strings.Replace(path, tDeckDir, "", 1))
+		}
+		return nil
+	}
+
+	if err := filepath.WalkDir(deckDir, walk); err != nil {
+		return "", err
+	}
+
+	if len(foundFiles) == 0 {
+		return "", errors.New("no decks found with the given name")
+	} else if len(foundFiles) > 1 {
+		errorString := "Multiple files found: try specifying a path to the file instead"
+		for _, entry := range foundFiles {
+			errorString += fmt.Sprintf("\n%v", entry)
+		}
+		return "", errors.New(errorString)
+	} else {
+		deckFilePath = filepath.Join(deckDir, foundFiles[0])
 	}
 
 	return deckFilePath, nil
