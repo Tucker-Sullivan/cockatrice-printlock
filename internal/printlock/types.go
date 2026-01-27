@@ -1,0 +1,17 @@
+package printlock
+
+import "fmt"
+
+type ApplyOptions struct {
+	SetPriority []string
+}
+
+type ApplyError struct {
+	Zone   string
+	Card   string
+	Reason string
+}
+
+func (e ApplyError) Error() string {
+	return fmt.Sprintf("%s (%s): %s", e.Card, e.Zone, e.Reason)
+}
