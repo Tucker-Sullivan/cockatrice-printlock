@@ -20,8 +20,8 @@ var initCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		reader := bufio.NewReader(os.Stdin)
 
-		fmt.Println("Printlock init")
-		fmt.Println("-------------")
+		println("Printlock init")
+		println("-------------")
 
 		cardsPath, deckDir, err := searchDefaultDirectory()
 		if err != nil {
@@ -48,18 +48,14 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		cfg := config.Config{
-			CardsXMLPath:      cardsPath,
-			DeckDir:           deckDir,
-			GlobalSetPriority: []string{},
-		}
+		cfg := config.NewConfig(cardsPath, deckDir)
 
-		if err := config.SaveConfig(cfg); err != nil {
+		if err := cfg.SaveConfig(); err != nil {
 			return err
 		}
 
-		fmt.Println()
-		fmt.Println("✔ Saved configuration")
+		println()
+		println("✔ Saved configuration")
 		fmt.Printf("  cards.xml: %s\n", cardsPath)
 		fmt.Printf("  decks dir: %s\n", deckDir)
 

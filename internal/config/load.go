@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func DefaultConfigPath() (string, error) {
@@ -41,18 +40,4 @@ func LoadConfig() (*Config, error) {
 
 	config.sanitize()
 	return &config, nil
-}
-
-func (c *Config) sanitize() {
-	c.CardsXMLPath = strings.TrimSpace(c.CardsXMLPath)
-	c.DeckDir = strings.TrimSpace(c.DeckDir)
-	cleanedSets := make([]string, 0, len(c.GlobalSetPriority))
-	for _, setCode := range c.GlobalSetPriority {
-		tSetCode := strings.TrimSpace(setCode)
-		if tSetCode == "" {
-			continue
-		}
-		cleanedSets = append(cleanedSets, tSetCode)
-	}
-	c.GlobalSetPriority = cleanedSets
 }

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 )
 
-func SaveConfig(cfg Config) error {
-	cfg.sanitize()
+func (c *Config) SaveConfig() error {
+	c.sanitize()
 
 	path, err := DefaultConfigPath()
 	if err != nil {
@@ -18,7 +18,7 @@ func SaveConfig(cfg Config) error {
 		return err
 	}
 
-	data, err := json.MarshalIndent(cfg, "", " ")
+	data, err := json.MarshalIndent(&c, "", " ")
 	if err != nil {
 		return err
 	}

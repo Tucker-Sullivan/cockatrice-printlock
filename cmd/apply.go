@@ -27,18 +27,7 @@ var applyCmd = &cobra.Command{
 			return errors.New("--deck is required")
 		}
 
-		// Optional: parse --sets "ABC,DEF,GHI"
-		var setPriority []string
-		if strings.TrimSpace(applySetsCSV) != "" {
-			parts := strings.Split(applySetsCSV, ",")
-			setPriority = make([]string, 0, len(parts))
-			for _, p := range parts {
-				p = strings.TrimSpace(p)
-				if p != "" {
-					setPriority = append(setPriority, p)
-				}
-			}
-		}
+		setPriority := parseCSV(applySetsCSV)
 
 		// 1) load cfg
 		cfg, err := config.LoadConfig()
