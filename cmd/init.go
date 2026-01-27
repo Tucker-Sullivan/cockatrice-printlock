@@ -28,21 +28,21 @@ var initCmd = &cobra.Command{
 			return err
 		}
 		if cardsPath == "" {
-			cardsPath, err := promptPath(reader, "Path to Cockatrice cards.xml")
+			cardsPathInput, err := promptPath(reader, "Path to Cockatrice cards.xml")
 			if err != nil {
 				return err
 			}
-			cardsPath, err = validateFile(cardsPath)
+			cardsPath, err = validateFile(cardsPathInput)
 			if err != nil {
 				return err
 			}
 		}
 		if deckDir == "" {
-			deckDir, err := promptPath(reader, "Path to Cockatrice decks directory")
+			deckDirInput, err := promptPath(reader, "Path to Cockatrice decks directory")
 			if err != nil {
 				return err
 			}
-			deckDir, err = validateDir(deckDir)
+			deckDir, err = validateDir(deckDirInput)
 			if err != nil {
 				return err
 			}
@@ -160,11 +160,11 @@ func searchCockatriceDirectory(rootPath string) (string, string, error) {
 	if !stat.IsDir() {
 		return "", "", errors.New("could not find default Cockatrice directory")
 	}
-	cardsXmlPath := filepath.Join(rootPath, "cards.xml")
-	if _, err := os.Stat(cardsXmlPath); err != nil {
+	cardsXMLPath := filepath.Join(rootPath, "cards.xml")
+	if _, err := os.Stat(cardsXMLPath); err != nil {
 		return "", "", nil
 	}
-	cardsPath = cardsXmlPath
+	cardsPath = cardsXMLPath
 	deckDirPath := filepath.Join(rootPath, "decks")
 	deckDirStat, err := os.Stat(deckDirPath)
 	if err != nil {

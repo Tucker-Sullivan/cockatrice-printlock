@@ -151,11 +151,12 @@ func ResolveDeckPath(deckDir, deckName string) (string, error) {
 	if len(foundFiles) == 0 {
 		return "", errors.New("no decks found with the given name")
 	} else if len(foundFiles) > 1 {
-		errorString := "Multiple files found: try specifying a path to the file instead"
+		var errorString strings.Builder
+		errorString.WriteString("Multiple files found: try specifying a path to the file instead")
 		for _, entry := range foundFiles {
-			errorString += fmt.Sprintf("\n%v", entry)
+			fmt.Fprintf(&errorString, "\n%v", entry)
 		}
-		return "", errors.New(errorString)
+		return "", errors.New(errorString.String())
 	} else {
 		deckFilePath = filepath.Join(deckDir, foundFiles[0])
 	}
