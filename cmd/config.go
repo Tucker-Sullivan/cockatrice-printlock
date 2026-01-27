@@ -25,22 +25,38 @@ var configSetters = map[string]func(*config.Config, string) error{
 		return nil
 	},
 	"globalSetsHavePriority": func(c *config.Config, input string) error {
-		input = strings.TrimSpace(strings.ToLower(input))
-		value, ableToParse := false, true
-		switch input {
-		case "true":
-			value = true
-		case "false":
-			value = false
-		default:
-			ableToParse = false
-		}
-		if !ableToParse {
-			return errors.New("value must be true or false")
+		value, err := checkBoolInput(input)
+		if err != nil {
+			return err
 		}
 		c.GlobalSetsHavePriority = value
 		return nil
 	},
+	"preferHigherCollectionNumber": func(c *config.Config, input string) error {
+		value, err := checkBoolInput(input)
+		if err != nil {
+			return err
+		}
+		c.PreferHigherCollectionNumber = value
+		return nil
+	},
+}
+
+func checkBoolInput(input string) (bool, error) {
+	input = strings.TrimSpace(strings.ToLower(input))
+	value, ableToParse := false, true
+	switch input {
+	case "true":
+		value = true
+	case "false":
+		value = false
+	default:
+		ableToParse = false
+	}
+	if !ableToParse {
+		return false, errors.New("value must be true or false")
+	}
+	return value, nil
 }
 
 var configCmd = &cobra.Command{

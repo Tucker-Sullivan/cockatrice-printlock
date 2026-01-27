@@ -3,18 +3,20 @@ package config
 import "strings"
 
 type Config struct {
-	DeckDir                string   `json:"deckDir"`
-	CardsXMLPath           string   `json:"cardsXmlPath"`
-	GlobalSetPriority      []string `json:"globalSetPriority"`
-	GlobalSetsHavePriority bool     `json:"globalSetsHavePriority"`
+	GlobalSetsHavePriority       bool     `json:"globalSetsHavePriority"`
+	PreferHigherCollectionNumber bool     `json:"preferHigherCollectionNumber"`
+	DeckDir                      string   `json:"deckDir"`
+	CardsXMLPath                 string   `json:"cardsXmlPath"`
+	GlobalSetPriority            []string `json:"globalSetPriority"`
 }
 
 func NewConfig(cardsPath, deckDir string) *Config {
 	return &Config{
-		CardsXMLPath:           cardsPath,
-		DeckDir:                deckDir,
-		GlobalSetPriority:      []string{},
-		GlobalSetsHavePriority: false,
+		CardsXMLPath:                 cardsPath,
+		DeckDir:                      deckDir,
+		GlobalSetPriority:            []string{},
+		GlobalSetsHavePriority:       false,
+		PreferHigherCollectionNumber: false,
 	}
 }
 

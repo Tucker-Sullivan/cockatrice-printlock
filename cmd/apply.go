@@ -27,47 +27,51 @@ var applyCmd = &cobra.Command{
 			return errors.New("--deck is required")
 		}
 
-		setPriority := parseCSV(applySetsCSV)
-
-		// 1) load cfg
+		// load cfg
 		cfg, err := config.LoadConfig()
 		if err != nil {
 			return errors.New("error loading config. make sure to run init command if config file has not been generated yet")
 		}
 
-		// 2) resolve effective setPriority (cli override vs config)
-		if len(setPriority) == 0 {
-			setPriority = cfg.GlobalSetPriority
-		}
-
-		// 3) load cardsdb (cards.xml)
+		// load cardsdb
 		db, err := cardsdb.ParseCardsDB(cfg.CardsXMLPath)
 		if err != nil {
 			return err
 		}
 
-		// 4) resolve deck path
+		// resolve deck path
 		deckFilePath, err := deck.ResolveDeckPath(cfg.DeckDir, deckName)
 		if err != nil {
 			return err
 		}
 
-		// 5) load deck
+		// load deck
 		d, err := deck.LoadDeck(deckFilePath)
 		if err != nil {
 			return err
 		}
 
-		// 6) apply printings (P1)
+		// apply printings
+		cliSetPriority := parseCSV(applySetsCSV)
+		completedSetPriority := make([]string, 0, len(cliSetPriority)+len(cfg.GlobalSetPriority))
+
+		if cfg.GlobalSetsHavePriority {
+			completedSetPriority = append(completedSetPriority, cfg.GlobalSetPriority...)
+			completedSetPriority = append(completedSetPriority, cliSetPriority...)
+		} else {
+			completedSetPriority = append(completedSetPriority, cliSetPriority...)
+			completedSetPriority = append(completedSetPriority, cfg.GlobalSetPriority...)
+		}
 		opt := printlock.ApplyOptions{
-			SetPriority: setPriority,
+			PreferHigherCollectionNumber: cfg.PreferHigherCollectionNumber,
+			SetPriority:                  completedSetPriority,
 		}
 		d, errs := printlock.ApplyPrintings(db, d, opt)
 		for _, e := range errs {
 			fmt.Fprintln(os.Stderr, e)
 		}
 
-		// 7) write deck (D3)
+		// write deck
 		err = d.WriteDeckFile(deckFilePath)
 		if err != nil {
 			return err

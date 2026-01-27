@@ -3,13 +3,15 @@ package printlock
 import "fmt"
 
 type ApplyOptions struct {
-	SetPriority []string
+	PreferHigherCollectionNumber bool
+	SetPriority                  []string
 }
 
 type ApplyError struct {
-	Zone   string
-	Card   string
-	Reason string
+	Overwritten bool
+	Zone        string
+	Card        string
+	Reason      string
 }
 
 func (e ApplyError) Error() string {

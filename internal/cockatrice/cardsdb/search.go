@@ -34,7 +34,7 @@ func (c *CardsDB) FindPrinting(cardName, setCode, collectionNumber string) (Prin
 
 	tCollectionNumber := strings.TrimSpace(collectionNumber)
 	if tCollectionNumber == "" {
-		return printings[0], true
+		return Printing{}, false
 	}
 
 	for _, printing := range printings {
@@ -66,7 +66,7 @@ func (c *CardsDB) FindPrintingByUUID(cardName, uuid string) (Printing, bool) {
 	return Printing{}, false
 }
 
-func (c *CardsDB) FindPrintingBySetPriority(cardName string, setPriority []string) (Printing, bool) {
+func (c *CardsDB) FindPrintingBySetPriority(cardName string, setPriority []string, preferHigh bool) (Printing, bool) {
 	if len(setPriority) == 0 {
 		return Printing{}, false
 	}
@@ -81,6 +81,9 @@ func (c *CardsDB) FindPrintingBySetPriority(cardName string, setPriority []strin
 		printings := c.FindPrintingsInSet(tCardName, tSetCode)
 		if len(printings) == 0 {
 			continue
+		}
+		if preferHigh {
+			return printings[len(printings)-1], true
 		}
 		return printings[0], true
 	}
