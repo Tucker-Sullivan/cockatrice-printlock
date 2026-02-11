@@ -54,7 +54,7 @@ func InitModel() (model, error) {
 		return model{}, err
 	}
 
-	deckPicker, err := initDeckPickerModel(cfg)
+	deckPicker, err := initDeckPickerModel(cfg.DeckDir)
 	if err != nil {
 		return model{}, err
 	}
@@ -135,20 +135,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	if m.selected {
-		return renderScreen(stylePanel.Render(m.screens[m.screen].View()), m.width, m.height)
-	}
 	var s strings.Builder
-	s.WriteString(styleTitle.Render("Printlock") + "\n\n")
-	s.WriteString(styleBase.Render("Select a process:") + "\n\n")
-	for i, item := range m.screens {
-		cursor := " "
-		if i == m.screen {
-			cursor = ">"
+
+	if m.selected {
+		s.WriteString(styleTitle.Render(m.screens[m.screen].Title()) + "\n\n")
+		s.WriteString(m.screens[m.screen].View())
+	} else {
+		s.WriteString(styleTitle.Render("Printlock") + "\n\n")
+		s.WriteString(styleBase.Render("Select a process:") + "\n\n")
+		for i, item := range m.screens {
+			cursor := " "
+			if i == m.screen {
+				cursor = ">"
+			}
+			fmt.Fprintf(&s, "%s %s\n", cursor, item.Title())
 		}
-		fmt.Fprintf(&s, "%s %s\n", cursor, item.Title())
+		s.WriteString("\n" + styleHelp.Render("Use Up/Down or j/k to move, Enter/Space to select.") + "\n")
+		s.WriteString(styleHelp.Render("Ctrl+C to quit."))
 	}
-	s.WriteString("\n" + styleHelp.Render("Use Up/Down or j/k to move, Enter/Space to select.") + "\n")
-	s.WriteString(styleHelp.Render("Ctrl+C to quit."))
+
 	return renderScreen(stylePanel.Render(s.String()), m.width, m.height)
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tucker-Sullivan/cockatrice-printlock/internal/config"
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -13,22 +12,24 @@ import (
 type filePickerModel struct {
 	width        int
 	height       int
-	filepicker   filepicker.Model
 	selectedFile string
+	title        string
 	err          error
-	config       *config.Config
+	filepicker   filepicker.Model
 }
 
 type clearErrorMsg struct{}
 
-func initDeckPickerModel(cfg *config.Config) (filePickerModel, error) {
+func initDeckPickerModel(directory string) (filePickerModel, error) {
 	fp := filepicker.New()
 	fp.AutoHeight = false
 	fp.AllowedTypes = []string{".cod"}
-	fp.CurrentDirectory = cfg.DeckDir
+	fp.CurrentDirectory = directory
+	fp.KeyMap.Open.SetKeys("enter", " ", "l", "right")
+	fp.KeyMap.Select.SetKeys("enter", " ")
 	return filePickerModel{
+		title:      "Apply Printings",
 		filepicker: fp,
-		config:     cfg,
 	}, nil
 }
 
@@ -38,7 +39,7 @@ func clearErrorAfter(t time.Duration) tea.Cmd {
 	})
 }
 
-func (m filePickerModel) Title() string { return "Apply Printings" }
+func (m filePickerModel) Title() string { return m.title }
 func (m filePickerModel) Hidden() bool  { return false }
 
 func (m filePickerModel) Init() tea.Cmd {
@@ -73,13 +74,12 @@ func (m filePickerModel) View() string {
 	if m.err != nil {
 		s.WriteString(m.filepicker.Styles.DisabledFile.Render(m.err.Error()))
 	} else if m.selectedFile == "" {
-		s.WriteString("Pick a file:\n")
+		s.WriteString("Pick a file:")
 	} else {
 		s.WriteString("Selected file: " + m.filepicker.Styles.Selected.Render(m.selectedFile))
 	}
 
-	out := styleTitle.Render("Apply printings") + "\n\n"
-	out += s.String() + "\n\n"
+	out := s.String() + "\n\n"
 	out += styleBase.Render(m.filepicker.View()) + "\n\n"
 	out += styleHelp.Render("Press Esc or q to return to the main menu.") + "\n"
 	out += styleHelp.Render("Ctrl+C to quit.")

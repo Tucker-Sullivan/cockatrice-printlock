@@ -71,6 +71,13 @@ func isAllUpper(term string) bool {
 	return hasLetter
 }
 
+func newSetDelegate(selected map[string]bool) setDelegate {
+	return setDelegate{
+		DefaultDelegate: list.NewDefaultDelegate(),
+		selected:        selected,
+	}
+}
+
 func (d setDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	it, ok := listItem.(item)
 	if !ok {
@@ -216,13 +223,6 @@ func (s setsSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	s.list, cmd = s.list.Update(msg)
 	return s, cmd
-}
-
-func newSetDelegate(selected map[string]bool) setDelegate {
-	return setDelegate{
-		DefaultDelegate: list.NewDefaultDelegate(),
-		selected:        selected,
-	}
 }
 
 func (s setsSelectionModel) View() string {
