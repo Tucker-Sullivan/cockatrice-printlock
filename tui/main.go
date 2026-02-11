@@ -11,13 +11,15 @@ import (
 )
 
 type model struct {
-	selected bool
-	width    int
-	height   int
-	screen   int
-	screens  []submodel
-	config   *config.Config
-	db       *cardsdb.CardsDB
+	selected         bool
+	width            int
+	height           int
+	numScreens       int
+	numHiddenScreens int
+	screen           int
+	screens          []submodel
+	config           *config.Config
+	db               *cardsdb.CardsDB
 }
 
 type submodel interface {
@@ -43,6 +45,14 @@ func renderScreen(content string, width, height int) string {
 	)
 }
 
+func (m model) updateSubmodel(msg tea.Msg) (tea.Model, tea.Cmd) {
+	updated, cmd := m.screens[m.screen].Update(msg)
+	if screen, ok := updated.(submodel); ok {
+		m.screens[m.screen] = screen
+	}
+	return m, cmd
+}
+
 func InitModel() (model, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -62,22 +72,19 @@ func InitModel() (model, error) {
 	screens := []submodel{
 		initComingSoonModel(),
 		deckPicker,
+	}
+
+	hiddenScreens := []submodel{
 		initSetSelectionModel(db),
 	}
 
 	return model{
-		screens: screens,
-		config:  cfg,
-		db:      db,
+		numScreens:       len(screens),
+		numHiddenScreens: len(hiddenScreens),
+		screens:          append(screens, hiddenScreens...),
+		config:           cfg,
+		db:               db,
 	}, nil
-}
-
-func (m model) UpdateSubmodel(msg tea.Msg) (tea.Model, tea.Cmd) {
-	updated, cmd := m.screens[m.screen].Update(msg)
-	if screen, ok := updated.(submodel); ok {
-		m.screens[m.screen] = screen
-	}
-	return m, cmd
 }
 
 func (m model) Init() tea.Cmd {
@@ -90,7 +97,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		if m.selected {
-			return m.UpdateSubmodel(msg)
+			return m.updateSubmodel(msg)
 		}
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
@@ -101,7 +108,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selected = false
 				return m, nil
 			} else {
-				return m.UpdateSubmodel(msg)
+				return m.updateSubmodel(msg)
 			}
 		}
 
@@ -113,7 +120,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.screen--
 			}
 		case "down", "j":
-			if m.screen < len(m.screens)-1 {
+
+			if m.screen < m.numScreens-1 {
 				m.screen++
 			}
 		case "enter", " ":
@@ -127,7 +135,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	default:
 		if m.selected {
-			return m.UpdateSubmodel(msg)
+			return m.updateSubmodel(msg)
 		}
 	}
 
@@ -144,6 +152,9 @@ func (m model) View() string {
 		s.WriteString(styleTitle.Render("Printlock") + "\n\n")
 		s.WriteString(styleBase.Render("Select a process:") + "\n\n")
 		for i, item := range m.screens {
+			if item.Hidden() {
+				continue
+			}
 			cursor := " "
 			if i == m.screen {
 				cursor = ">"

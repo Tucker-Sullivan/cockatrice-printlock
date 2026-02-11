@@ -192,7 +192,7 @@ func initSetSelectionModel(db *cardsdb.CardsDB) setsSelectionModel {
 }
 
 func (s setsSelectionModel) Title() string { return "Set Selection" }
-func (s setsSelectionModel) Hidden() bool  { return false }
+func (s setsSelectionModel) Hidden() bool  { return true }
 
 func (s setsSelectionModel) Init() tea.Cmd {
 	return nil
