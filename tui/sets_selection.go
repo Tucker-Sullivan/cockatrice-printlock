@@ -29,10 +29,11 @@ type setDelegate struct {
 }
 
 type setsSelectionModel struct {
-	width    int
-	height   int
-	list     list.Model
-	selected map[string]bool
+	width         int
+	height        int
+	list          list.Model
+	selected      map[string]bool
+	selectedOrder []string
 }
 
 func filterByCodeOrDesc(term string, targets []string) []list.Rank {
@@ -152,21 +153,11 @@ func (d setDelegate) Render(w io.Writer, m list.Model, index int, listItem list.
 	fmt.Fprintf(w, "%s", title) //nolint:errcheck
 }
 
-func selectedLabel(selected map[string]bool) string {
+func selectedLabel(selected []string) string {
 	if len(selected) == 0 {
 		return "Selected sets: (none)"
 	}
-	codes := make([]string, 0, len(selected))
-	for code, isSelected := range selected {
-		if isSelected {
-			codes = append(codes, code)
-		}
-	}
-	if len(codes) == 0 {
-		return "Selected sets: (none)"
-	}
-	sort.Strings(codes)
-	return "Selected sets: " + strings.Join(codes, ", ")
+	return "Selected sets: " + strings.Join(selected, ", ")
 }
 
 func initSetSelectionModel(db *cardsdb.CardsDB) setsSelectionModel {
@@ -214,10 +205,20 @@ func (s setsSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if s.selected == nil {
 					s.selected = map[string]bool{}
 				}
-				s.selected[it.title] = !s.selected[it.title]
+				if !s.selected[it.title] {
+					s.selected[it.title] = true
+					s.selectedOrder = append(s.selectedOrder, it.title)
+				} else {
+					s.selected[it.title] = false
+					for i, v := range s.selectedOrder {
+						if v == it.title {
+							s.selectedOrder = append(s.selectedOrder[:i], s.selectedOrder[i+1:]...)
+						}
+					}
+				}
 			}
 		case "enter":
-			// apply printings
+			return s, func() tea.Msg { return setsSelectedMsg{sets: s.selectedOrder} }
 		}
 	}
 	var cmd tea.Cmd
@@ -227,7 +228,7 @@ func (s setsSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (s setsSelectionModel) View() string {
 	var out strings.Builder
-	out.WriteString(styleAccent.Render(selectedLabel(s.selected)) + "\n")
+	out.WriteString(styleAccent.Render(selectedLabel(s.selectedOrder)) + "\n")
 	out.WriteString(styleBase.Render(s.list.View()))
 	return out.String()
 }

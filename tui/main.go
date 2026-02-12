@@ -18,6 +18,8 @@ type model struct {
 	numHiddenScreens int
 	screen           int
 	screens          []submodel
+	selectedDeck     string
+	selectedSets     []string
 	config           *config.Config
 	db               *cardsdb.CardsDB
 }
@@ -28,6 +30,14 @@ type submodel interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() string
+}
+
+type deckSelectedMsg struct {
+	path string
+}
+
+type setsSelectedMsg struct {
+	sets []string
 }
 
 func renderScreen(content string, width, height int) string {
@@ -76,6 +86,7 @@ func InitModel() (model, error) {
 
 	hiddenScreens := []submodel{
 		initSetSelectionModel(db),
+		initApplyConfirmationModel(),
 	}
 
 	return model{
@@ -99,6 +110,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.selected {
 			return m.updateSubmodel(msg)
 		}
+	case deckSelectedMsg:
+		m.selectedDeck = msg.path
+		m.screen = 2 // set selection screen
+		return m, tea.Batch(
+			m.screens[m.screen].Init(),
+			func() tea.Msg { return tea.WindowSizeMsg{Width: m.width, Height: m.height} },
+		)
+	case setsSelectedMsg:
+		m.selectedSets = msg.sets
+		m.screen = 3 // apply confirmation screen
+		if confirmation, ok := m.screens[m.screen].(applyConfirmationModel); ok {
+			confirmation.deckPath = m.selectedDeck
+			confirmation.sets = m.selectedSets
+			m.screens[m.screen] = confirmation
+		}
+		return m, tea.Batch(
+			m.screens[m.screen].Init(),
+			func() tea.Msg { return tea.WindowSizeMsg{Width: m.width, Height: m.height} },
+		)
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
 			return m, tea.Quit

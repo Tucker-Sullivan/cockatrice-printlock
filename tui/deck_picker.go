@@ -64,6 +64,7 @@ func (m filePickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
 		m.selectedFile = path
+		return m, tea.Batch(cmd, func() tea.Msg { return deckSelectedMsg{path: m.selectedFile} })
 	}
 
 	return m, cmd
