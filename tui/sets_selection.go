@@ -211,18 +211,6 @@ func initSetSelectionModel(db *cardsdb.CardsDB, cfg *config.Config) setsSelectio
 		db:                     db,
 	}
 
-	// type setsSelectionModel struct {
-	// 	globalSetsHavePriority bool
-	// 	width                  int
-	// 	height                 int
-	// 	list                   list.Model
-	// 	selected               map[string]bool
-	// 	selectedOrder          []string
-	// 	globalSelectedOrder    []string
-	// 	globalSetsMessage      string
-	// 	cfg                    *config.Config
-	// 	db                     *cardsdb.CardsDB
-	// }
 	m.list.ResetFilter()
 	m.list.ResetSelected()
 	m.list.SetShowPagination(false)
@@ -285,6 +273,6 @@ func (s setsSelectionModel) View() string {
 	var out strings.Builder
 	out.WriteString(styleAccent.Render(selectedLabel(s.combineSets())) + "\n")
 	out.WriteString(styleAccent.Render(s.globalSetsMessage) + "\n")
-	out.WriteString(styleBase.Render(s.list.View()))
+	out.WriteString(stylePanel.Render(ansi.Strip(s.list.View())))
 	return out.String()
 }

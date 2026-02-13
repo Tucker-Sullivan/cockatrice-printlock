@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type filePickerModel struct {
@@ -27,6 +28,10 @@ func initDeckPickerModel(directory string) filePickerModel {
 	fp.CurrentDirectory = directory
 	fp.KeyMap.Open.SetKeys("enter", " ", "l", "right")
 	fp.KeyMap.Select.SetKeys("enter", " ")
+
+	// fp.Styles.Cursor = styleFilePicker
+	// fp.Styles.Selected = styleFilePickerSelected
+	// fp.Styles.File = styleFilePicker
 	return filePickerModel{
 		selectedFile: "",
 		title:        "Apply Printings",
@@ -78,15 +83,13 @@ func (m filePickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m filePickerModel) View() string {
 	var s strings.Builder
 	if m.err != nil {
-		s.WriteString(m.filepicker.Styles.DisabledFile.Render(m.err.Error()))
+		s.WriteString(styleError.Render(m.err.Error()))
 	} else if m.selectedFile == "" {
 		s.WriteString("Pick a file:")
-	} else {
-		s.WriteString("Selected file: " + m.filepicker.Styles.Selected.Render(m.selectedFile))
 	}
 
 	out := s.String() + "\n\n"
-	out += styleBase.Render(m.filepicker.View()) + "\n\n"
+	out += stylePanel.Render(ansi.Strip(m.filepicker.View())) + "\n\n"
 	out += styleHelp.Render("Press Esc or q to return to the main menu.") + "\n"
 	out += styleHelp.Render("Ctrl+C to quit.")
 	return out
