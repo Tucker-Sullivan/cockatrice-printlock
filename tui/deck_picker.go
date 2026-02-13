@@ -20,7 +20,7 @@ type filePickerModel struct {
 
 type clearErrorMsg struct{}
 
-func initDeckPickerModel(directory string) (filePickerModel, error) {
+func initDeckPickerModel(directory string) filePickerModel {
 	fp := filepicker.New()
 	fp.AutoHeight = false
 	fp.AllowedTypes = []string{".cod"}
@@ -28,9 +28,10 @@ func initDeckPickerModel(directory string) (filePickerModel, error) {
 	fp.KeyMap.Open.SetKeys("enter", " ", "l", "right")
 	fp.KeyMap.Select.SetKeys("enter", " ")
 	return filePickerModel{
-		title:      "Apply Printings",
-		filepicker: fp,
-	}, nil
+		selectedFile: "",
+		title:        "Apply Printings",
+		filepicker:   fp,
+	}
 }
 
 func clearErrorAfter(t time.Duration) tea.Cmd {
@@ -41,6 +42,10 @@ func clearErrorAfter(t time.Duration) tea.Cmd {
 
 func (m filePickerModel) Title() string { return m.title }
 func (m filePickerModel) Hidden() bool  { return false }
+
+func (m filePickerModel) CustomInit() submodel {
+	return initDeckPickerModel(m.filepicker.CurrentDirectory)
+}
 
 func (m filePickerModel) Init() tea.Cmd {
 	return m.filepicker.Init()

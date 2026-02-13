@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Tucker-Sullivan/cockatrice-printlock/internal/cockatrice/cardsdb"
+	"github.com/Tucker-Sullivan/cockatrice-printlock/internal/config"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -29,11 +30,16 @@ type setDelegate struct {
 }
 
 type setsSelectionModel struct {
-	width         int
-	height        int
-	list          list.Model
-	selected      map[string]bool
-	selectedOrder []string
+	globalSetsHavePriority bool
+	width                  int
+	height                 int
+	list                   list.Model
+	selected               map[string]bool
+	selectedOrder          []string
+	globalSelectedOrder    []string
+	globalSetsMessage      string
+	cfg                    *config.Config
+	db                     *cardsdb.CardsDB
 }
 
 func filterByCodeOrDesc(term string, targets []string) []list.Rank {
@@ -160,7 +166,15 @@ func selectedLabel(selected []string) string {
 	return "Selected sets: " + strings.Join(selected, ", ")
 }
 
-func initSetSelectionModel(db *cardsdb.CardsDB) setsSelectionModel {
+func (s setsSelectionModel) combineSets() []string {
+	if s.globalSetsHavePriority {
+		return append(s.globalSelectedOrder, s.selectedOrder...)
+	} else {
+		return append(s.selectedOrder, s.globalSelectedOrder...)
+	}
+}
+
+func initSetSelectionModel(db *cardsdb.CardsDB, cfg *config.Config) setsSelectionModel {
 	setItems := make([]item, 0, len(db.SetsByCode))
 	for _, v := range db.SetsByCode {
 		setItems = append(setItems, item{title: v.Code, desc: v.LongName})
@@ -174,8 +188,43 @@ func initSetSelectionModel(db *cardsdb.CardsDB) setsSelectionModel {
 	}
 
 	selectedMap := map[string]bool{}
+	for _, item := range cfg.GlobalSetPriority {
+		selectedMap[item] = true
+	}
+
+	m1 := "(global sets "
+	m2 := "don't "
+	m3 := "have priority)"
+	if cfg.GlobalSetsHavePriority {
+		m2 = ""
+	}
+
 	d := newSetDelegate(selectedMap)
-	m := setsSelectionModel{list: list.New(items, d, 1, 1), selected: selectedMap}
+	m := setsSelectionModel{
+		globalSetsHavePriority: cfg.GlobalSetsHavePriority,
+		list:                   list.New(items, d, 1, 1),
+		selected:               selectedMap,
+		selectedOrder:          make([]string, 0),
+		globalSelectedOrder:    cfg.GlobalSetPriority,
+		globalSetsMessage:      m1 + m2 + m3,
+		cfg:                    cfg,
+		db:                     db,
+	}
+
+	// type setsSelectionModel struct {
+	// 	globalSetsHavePriority bool
+	// 	width                  int
+	// 	height                 int
+	// 	list                   list.Model
+	// 	selected               map[string]bool
+	// 	selectedOrder          []string
+	// 	globalSelectedOrder    []string
+	// 	globalSetsMessage      string
+	// 	cfg                    *config.Config
+	// 	db                     *cardsdb.CardsDB
+	// }
+	m.list.ResetFilter()
+	m.list.ResetSelected()
 	m.list.SetShowPagination(false)
 	m.list.Title = "Sets"
 	m.list.Filter = filterByCodeOrDesc
@@ -184,6 +233,10 @@ func initSetSelectionModel(db *cardsdb.CardsDB) setsSelectionModel {
 
 func (s setsSelectionModel) Title() string { return "Set Selection" }
 func (s setsSelectionModel) Hidden() bool  { return true }
+
+func (s setsSelectionModel) CustomInit() submodel {
+	return initSetSelectionModel(s.db, s.cfg)
+}
 
 func (s setsSelectionModel) Init() tea.Cmd {
 	return nil
@@ -218,7 +271,9 @@ func (s setsSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "enter":
-			return s, func() tea.Msg { return setsSelectedMsg{sets: s.selectedOrder} }
+			if s.list.FilterState() != list.Filtering {
+				return s, func() tea.Msg { return setsSelectedMsg{sets: s.combineSets()} }
+			}
 		}
 	}
 	var cmd tea.Cmd
@@ -228,7 +283,8 @@ func (s setsSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (s setsSelectionModel) View() string {
 	var out strings.Builder
-	out.WriteString(styleAccent.Render(selectedLabel(s.selectedOrder)) + "\n")
+	out.WriteString(styleAccent.Render(selectedLabel(s.combineSets())) + "\n")
+	out.WriteString(styleAccent.Render(s.globalSetsMessage) + "\n")
 	out.WriteString(styleBase.Render(s.list.View()))
 	return out.String()
 }

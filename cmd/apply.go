@@ -66,6 +66,7 @@ var applyCmd = &cobra.Command{
 			PreferHigherCollectionNumber: cfg.PreferHigherCollectionNumber,
 			SetPriority:                  completedSetPriority,
 		}
+
 		d, errs := printlock.ApplyPrintings(db, d, opt)
 		for _, e := range errs {
 			fmt.Fprintln(os.Stderr, e)

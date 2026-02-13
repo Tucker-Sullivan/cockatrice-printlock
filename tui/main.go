@@ -27,6 +27,7 @@ type model struct {
 type submodel interface {
 	Title() string
 	Hidden() bool
+	CustomInit() submodel
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() string
@@ -50,7 +51,7 @@ func renderScreen(content string, width, height int) string {
 		lipgloss.Center,
 		lipgloss.Center,
 		content,
-		lipgloss.WithWhitespaceBackground(lipgloss.Color(colorBase)),
+		lipgloss.WithWhitespaceBackground(lipgloss.Color(flavor.Crust().Hex)),
 		lipgloss.WithWhitespaceChars(" "),
 	)
 }
@@ -74,10 +75,7 @@ func InitModel() (model, error) {
 		return model{}, err
 	}
 
-	deckPicker, err := initDeckPickerModel(cfg.DeckDir)
-	if err != nil {
-		return model{}, err
-	}
+	deckPicker := initDeckPickerModel(cfg.DeckDir)
 
 	screens := []submodel{
 		initComingSoonModel(),
@@ -85,8 +83,8 @@ func InitModel() (model, error) {
 	}
 
 	hiddenScreens := []submodel{
-		initSetSelectionModel(db),
-		initApplyConfirmationModel(),
+		initSetSelectionModel(db, cfg),
+		initApplyConfirmationModel(cfg, db),
 	}
 
 	return model{
@@ -113,6 +111,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case deckSelectedMsg:
 		m.selectedDeck = msg.path
 		m.screen = 2 // set selection screen
+		m.screens[m.screen] = m.screens[m.screen].CustomInit()
 		return m, tea.Batch(
 			m.screens[m.screen].Init(),
 			func() tea.Msg { return tea.WindowSizeMsg{Width: m.width, Height: m.height} },
@@ -120,6 +119,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case setsSelectedMsg:
 		m.selectedSets = msg.sets
 		m.screen = 3 // apply confirmation screen
+		m.screens[m.screen] = m.screens[m.screen].CustomInit()
 		if confirmation, ok := m.screens[m.screen].(applyConfirmationModel); ok {
 			confirmation.deckPath = m.selectedDeck
 			confirmation.sets = m.selectedSets
@@ -136,6 +136,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.selected {
 			if msg.String() == "q" {
 				m.selected = false
+				m.screen = 0
 				return m, nil
 			} else {
 				return m.updateSubmodel(msg)
@@ -156,6 +157,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter", " ":
 			m.selected = true
+			m.screens[m.screen] = m.screens[m.screen].CustomInit()
 			return m, tea.Batch(
 				m.screens[m.screen].Init(),
 				func() tea.Msg {

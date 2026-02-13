@@ -13,6 +13,10 @@ func initComingSoonModel() comingSoonModel {
 func (m comingSoonModel) Title() string { return "Comming Soon" }
 func (m comingSoonModel) Hidden() bool  { return false }
 
+func (m comingSoonModel) CustomInit() submodel {
+	return m
+}
+
 func (m comingSoonModel) Init() tea.Cmd {
 	return nil
 }

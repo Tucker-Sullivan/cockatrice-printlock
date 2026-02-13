@@ -27,21 +27,6 @@ var tuiCmd = &cobra.Command{
 	},
 }
 
-var tuiStyleCmd = &cobra.Command{
-	Use:   "style",
-	Short: "Preview TUI color swatches",
-	Long:  "Renders the TUI color swatches for the current theme",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		p := tea.NewProgram(tui.NewSwatchesModel())
-		if _, err := p.Run(); err != nil {
-			fmt.Printf("Alas, there's been an error: %v", err)
-			os.Exit(1)
-		}
-		return nil
-	},
-}
-
 func init() {
 	rootCmd.AddCommand(tuiCmd)
-	tuiCmd.AddCommand(tuiStyleCmd)
 }
